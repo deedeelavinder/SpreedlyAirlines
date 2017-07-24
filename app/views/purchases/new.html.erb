@@ -1,0 +1,102 @@
+<% user = @user %>
+
+<div class="center jumbotron">
+
+  <h4><%= @user.first_name.capitalize %>,</h4> Your flight to <%= @booking.flight.destination %>
+
+  is ready to purchase for <%= number_to_currency(@booking.flight.price) %>.<br><br>
+
+  <div class="payment-method">
+
+    <% if !@user.has_saved_card?(user) && !@user.has_new_card?(user) %>
+
+        <div>
+          <form id="payment-form" action="/cards" method="POST">
+            <%= hidden_field_tag(:booking_id, @booking.id) %>
+            <input type="hidden" name="payment_method_token" id="payment_method_token">
+            <input type="button" value="Enter Payment Info" onclick="SpreedlyExpress.openView();">
+          </form>
+        </div>
+
+    <% else %>
+
+        <% if @user.saved_cards(user).count == 1 && !@user.has_new_card?(user) %>
+            Last four digits of card on file: <%= @user.saved_cards(user).first.last_four %>
+        <% end %>
+
+        <%= form_tag(controller: 'purchases', action: 'create', method: 'post') do |f| %>
+
+            <%= hidden_field_tag :booking_id, @booking.id %>
+
+            <% if @user.has_new_card?(user) && @user.cards(user).count == 1 %>
+                <%= hidden_field_tag :token, @user.cards(user).first.token %>
+                <%= hidden_field_tag :retain_payment_method, false %>
+                <%= check_box_tag :retain_payment_method, checked = true %>  Save New Payment Method</br>
+
+            <% elsif @user.saved_cards(user).count > 1 %>
+                <% @user.saved_cards(user).each do |card| %>
+                    <ul class="cards required">
+                      <%= check_box_tag :token, card.token %>
+                      <label class="label"><%= card.last_four ? 'Use card ending in: ' + "#{card.last_four}" : 'Use new card' %></label>
+                    </ul>
+                <% end %>
+
+            <% elsif @user.new_card(user) %>
+                <%= hidden_field_tag :token, @user.new_card(user).token %>
+                <%= hidden_field_tag :retain_payment_method, false %>
+                <%= check_box_tag :retain_payment_method, checked = true %>  Save Payment Method</br>
+
+            <% elsif @user.saved_cards(user).count == 1 %>
+                <%= hidden_field_tag :token, @user.saved_cards(user).first.token %>
+            <% end %>
+
+            <%= hidden_field_tag :expedia, false %>
+            <%= check_box_tag :expedia, checked = true %>  Purchase through Expedia</br>
+
+            <%= submit_tag 'Purchase this Flight' %>
+        <% end %>
+
+        OR
+
+        <div>
+          <form id="payment-form" action="/cards" method="POST">
+            <%= hidden_field_tag(:booking_id, @booking.id) %>
+            <input type="hidden" name="payment_method_token" id="payment_method_token">
+            <input type="button" value="Enter a New Payment Method" onclick="SpreedlyExpress.openView();">
+          </form>
+        </div>
+
+    <% end %>
+  </div>
+</div>
+
+<script src="https://core.spreedly.com/iframe/express-2.min.js"></script>
+
+<script>
+    var amount = '<%= number_to_currency @booking.flight.price %>';
+    var fullName = '<%= @booking.user.first_name + ' ' + @booking.user.last_name %>';
+    var email = '<%= @booking.user.email %>';
+    var flightInfo = 'Your flight: <%= @booking.flight.destination %>';
+    var key = '<%= ApplicationController::SPREEDLY_KEY %>';
+    SpreedlyExpress.init(key, {
+        "amount": amount,
+        "company_name": "Spreedly Airlines",
+        "sidebar_top_description": "Flying the friendly skies.",
+        "sidebar_bottom_description": flightInfo,
+        "full_name": fullName
+    }, {
+        "email": email,
+        "retained": true
+    });
+
+    SpreedlyExpress.onPaymentMethod(function (token, paymentMethod) {
+
+        // Send requisite payment method info to backend
+        var tokenField = document.getElementById("payment_method_token");
+
+        tokenField.setAttribute("value", token);
+
+        var masterForm = document.getElementById('payment-form');
+        masterForm.submit();
+    });
+</script>

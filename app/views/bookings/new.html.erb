@@ -1,0 +1,28 @@
+<div class="center jumbotron">
+  <h2>Welcome to Spreedly Airlines!</h2>
+
+  <div class="new-booking">
+    <h4>Please choose your flight.</h4>
+
+    <%= form_for @booking do |f| %>
+        <div class="choose-flight">
+          <% @flights.each do |flight| %>
+              <ul>
+                <%= radio_button_tag :flight_id, flight.id -%>
+                <%= flight.destination.capitalize + ' ' + number_to_currency(flight.price) %>
+              </ul>
+          <% end %>
+        </div>
+        <div class="user-info">
+          <%= f.fields_for @user do |user_form| %>
+              First Name : <%= user_form.text_field :first_name %><br>
+              Last Name :  <%= user_form.text_field :last_name %><br>
+              Email :      <%= user_form.text_field :email %><br>
+          <% end %>
+          <br>
+        </div>
+        <%= f.submit %>
+        <br>
+    <% end %>
+  </div>
+</div>

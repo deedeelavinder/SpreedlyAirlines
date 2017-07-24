@@ -1,0 +1,31 @@
+<% purchased_bookings = @user_bookings.where(purchased: true) %>
+<% unpurchased_bookings = @user_bookings.where(purchased: nil) %>
+
+<div class="center jumbotron">
+
+  <h2><%= @user.first_name.capitalize %>,</h2> Here are your purchased flight/s:
+
+  <% purchased_bookings.each do |booking| %>
+      <ul class="purchases">
+        <li><%= booking.flight.destination %>  <%= number_to_currency booking.flight.price %></li>
+      </ul>
+  <% end %>
+
+  <br>
+
+  <% if unpurchased_bookings.any? %>
+      <h5>You have also booked these flights -- time to pay.</h5>
+
+      <% unpurchased_bookings.each do |booking| %>
+          <ul class="unpurchased-bookings">
+            <li>
+              <%= hidden_field_tag :booking_id, booking.id -%>
+              <%= link_to 'Complete this booking.', new_purchase_path(booking_id: booking.id) %>
+              <strong><%= booking.flight.destination %>  <%= number_to_currency booking.flight.price %></strong>
+            </li>
+          </ul>
+      <% end %>
+  <% end %>
+  <br>
+  <%= link_to 'Buy another flight.', root_url %>
+</div>
